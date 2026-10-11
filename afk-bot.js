@@ -1,16 +1,9 @@
 /**
- * Standalone 24/7 Minecraft AFK Bot
+ * Standalone 24/7 Minecraft AFK Bot (with Railway Web Health Check)
  * Server: alamincraft.aternos.me:26832
- * 
- * Usage:
- *   1. Run: npm install mineflayer minecraft-protocol
- *   2. Start: node afk-bot.js
- *   3. Run 24/7 with PM2 (optional):
- *      npm install -g pm2
- *      pm2 start afk-bot.js --name "mc-afk-bot"
- *      pm2 save
  */
 
+import http from 'http';
 import mineflayer from 'mineflayer';
 import mcProtocol from 'minecraft-protocol';
 
@@ -164,3 +157,47 @@ async function connectBot() {
 }
 
 connectBot();
+
+// Lightweight HTTP server for Railway web routing & health check
+const PORT = process.env.PORT || 3000;
+const server = http.createServer((req, res) => {
+  res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+  const isSpawned = Boolean(bot && bot.entity);
+  const html = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Minecraft AFK Bot - Railway Online</title>
+  <style>
+    body { font-family: system-ui, sans-serif; background: #0b0f19; color: #e2e8f0; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; padding: 20px; box-sizing: border-box; }
+    .card { background: #131b2e; border: 1px solid #1e293b; padding: 2rem; border-radius: 12px; max-width: 480px; width: 100%; text-align: center; }
+    .badge { display: inline-block; background: #064e3b; color: #34d399; padding: 6px 14px; border-radius: 999px; font-weight: 600; font-size: 13px; margin-bottom: 1.25rem; }
+    h1 { margin: 0 0 8px; font-size: 1.4rem; color: #f8fafc; font-weight: 700; }
+    p { color: #94a3b8; font-size: 13px; line-height: 1.5; margin: 0 0 1rem; }
+    .info { background: #0a0f1d; border: 1px solid #1e293b; padding: 14px; border-radius: 8px; font-family: monospace; font-size: 13px; color: #38bdf8; text-align: left; margin: 1.25rem 0; line-height: 1.8; }
+    .tip { font-size: 12px; color: #eab308; background: rgba(234, 179, 8, 0.1); border: 1px solid rgba(234, 179, 8, 0.2); padding: 10px; border-radius: 6px; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="badge">● 24/7 AFK BOT ACTIVE</div>
+    <h1>Minecraft Bot is Running!</h1>
+    <p>Railway container is healthy and actively maintaining the Minecraft AFK bot.</p>
+    <div class="info">
+      <div><strong>Server:</strong> ${CONFIG.host}:${CONFIG.port}</div>
+      <div><strong>Username:</strong> ${CONFIG.username}</div>
+      <div><strong>Bot State:</strong> ${isSpawned ? '🟢 In Game (Anti-AFK active)' : '🟡 Waiting for Aternos'}</div>
+    </div>
+    <div class="tip">
+      👉 <strong>Important:</strong> Start your server on <a href="https://aternos.org/servers/" target="_blank" style="color: #fde047; font-weight: bold;">aternos.org</a> if it is currently offline!
+    </div>
+  </div>
+</body>
+</html>`;
+  res.end(html);
+});
+
+server.listen(Number(PORT), '0.0.0.0', () => {
+  console.log(`🌐 HTTP Web Server listening on port ${PORT} (Railway health check ready)`);
+});
