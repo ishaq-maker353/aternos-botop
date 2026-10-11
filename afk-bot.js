@@ -1,7 +1,6 @@
 /**
  * Standalone 24/7 Minecraft AFK Bot & Web Dashboard
- * Server: alamincraft.aternos.me:26832
- * Built for Railway, Render, VPS or Local hosting
+ * With Live IP, Port & Username Configuration
  */
 
 import http from 'http';
@@ -419,11 +418,11 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
     .chat-sender.bot { color: #34d399; }
     .chat-sender.server { color: #818cf8; }
     .chat-input-row { display: flex; gap: 8px; }
-    input[type="text"] {
-      flex: 1; background: #070b12; border: 1px solid #374151; color: #fff;
+    input[type="text"], input[type="number"] {
+      background: #070b12; border: 1px solid #374151; color: #fff;
       padding: 8px 12px; border-radius: 6px; font-size: 12px; font-family: monospace;
     }
-    input[type="text"]:focus { outline: none; border-color: #10b981; }
+    input[type="text"]:focus, input[type="number"]:focus { outline: none; border-color: #10b981; }
 
     .log-box {
       height: 200px; background: #070b12; border: 1px solid var(--card-border);
@@ -469,6 +468,35 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
         Visit <a href="https://aternos.org/servers/" target="_blank">aternos.org</a> and click <strong>Start</strong>. The bot will automatically join!
       </div>
       <button onclick="pingServer()">Check Status</button>
+    </div>
+
+    <!-- Server IP, Port & Bot Name Settings -->
+    <div class="card">
+      <div class="card-title">
+        <span>⚙️ Server IP, Port &amp; Bot Name Settings</span>
+        <span id="config-status" style="font-size: 11px; color: #34d399;">Active: <strong id="cfg-active-target">alamincraft.aternos.me:26832</strong></span>
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px;">
+        <div>
+          <label style="font-size: 11px; color: #94a3b8; display: block; margin-bottom: 4px;">Server IP / Host:</label>
+          <input type="text" id="cfg-host" value="alamincraft.aternos.me" placeholder="alamincraft.aternos.me" style="width: 100%;">
+        </div>
+        <div>
+          <label style="font-size: 11px; color: #94a3b8; display: block; margin-bottom: 4px;">Server Port:</label>
+          <input type="number" id="cfg-port" value="26832" placeholder="26832" style="width: 100%;">
+        </div>
+        <div>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+            <label style="font-size: 11px; color: #94a3b8;">Bot In-Game Name:</label>
+            <a href="javascript:void(0)" onclick="generateRandomName()" style="font-size: 10px; color: #34d399; text-decoration: none;">🎲 Random Name</a>
+          </div>
+          <input type="text" id="cfg-username" value="AFK_Bot_Pro" placeholder="AFK_Bot_Pro" style="width: 100%;">
+        </div>
+      </div>
+      <div style="display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; margin-top: 4px;">
+        <button onclick="saveAndConnect()" class="btn-primary">💾 Connect &amp; Save Settings</button>
+        <button onclick="disconnectBot()" style="background: #991b1b; border-color: #ef4444; color: #fff;">🛑 Disconnect</button>
+      </div>
     </div>
 
     <!-- Quick Actions -->
@@ -642,13 +670,24 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
       } else {
         invEl.innerHTML = '<span style="color: #64748b;">Empty</span>';
       }
+
+      if (!hasLoadedConfig && data.config) {
+        document.getElementById('cfg-host').value = data.config.host || 'alamincraft.aternos.me';
+        document.getElementById('cfg-port').value = data.config.port || 26832;
+        document.getElementById('cfg-username').value = data.config.username || 'AFK_Bot_Pro';
+        hasLoadedConfig = true;
+      }
+      if (data.config) {
+        document.getElementById('header-host').innerText = data.config.host + ':' + data.config.port;
+        document.getElementById('cfg-active-target').innerText = data.config.host + ':' + data.config.port + ' (' + data.config.username + ')';
+      }
     }
 
     function addChatMsg(msg) {
       const box = document.getElementById('chat-box');
       const el = document.createElement('div');
       el.className = 'chat-msg';
-      const senderClass = msg.isSystem ? 'server' : (msg.sender === 'AFK_Bot_Pro' ? 'bot' : '');
+      const senderClass = msg.isSystem ? 'server' : (msg.sender === CONFIG.username ? 'bot' : '');
       el.innerHTML = '<span class="chat-time">' + msg.time + '</span>' +
         '<span class="chat-sender ' + senderClass + '">&lt;' + msg.sender + '&gt;</span> ' +
         '<span>' + msg.text + '</span>';
@@ -691,6 +730,35 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
 
     function reconnectNow() {
       fetch('/api/reconnect', { method: 'POST' });
+    }
+
+    let hasLoadedConfig = false;
+
+    function generateRandomName() {
+      const names = ['Miner', 'Steve', 'Alex', 'Shadow', 'Ghost', 'Pro', 'Craft', 'Legend', 'Ninja', 'Titan'];
+      const num = Math.floor(100 + Math.random() * 900);
+      document.getElementById('cfg-username').value = names[Math.floor(Math.random() * names.length)] + '_AFK_' + num;
+    }
+
+    function saveAndConnect() {
+      const host = document.getElementById('cfg-host').value.trim();
+      const port = Number(document.getElementById('cfg-port').value);
+      const username = document.getElementById('cfg-username').value.trim();
+      if (!host || !port || !username) return alert('Please enter Server IP, Port and Bot Username!');
+
+      fetch('/api/config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ host, port, username })
+      }).then(r => r.json()).then(res => {
+        alert('Saved! Connecting bot to ' + host + ':' + port + ' as ' + username + '...');
+      });
+    }
+
+    function disconnectBot() {
+      fetch('/api/disconnect', { method: 'POST' }).then(() => {
+        alert('Bot disconnected.');
+      });
     }
 
     function pingServer() {
@@ -754,12 +822,53 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  // Reconnect API
   if (req.url === '/api/reconnect' && req.method === 'POST') {
     connectBot();
     res.writeHead(200, { 'Content-Type': 'application/json' });
     return res.end(JSON.stringify({ success: true }));
   }
 
+  // Update IP, Port, Username Config API
+  if (req.url === '/api/config' && req.method === 'POST') {
+    let body = '';
+    req.on('data', chunk => body += chunk);
+    req.on('end', () => {
+      try {
+        const { host, port, username } = JSON.parse(body);
+        if (host) CONFIG.host = host.trim();
+        if (port) CONFIG.port = Number(port);
+        if (username) CONFIG.username = username.trim();
+        addLog('info', `Settings updated: ${CONFIG.host}:${CONFIG.port} with bot name "${CONFIG.username}"`);
+        connectBot();
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: true, config: CONFIG }));
+      } catch {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Invalid settings body' }));
+      }
+    });
+    return;
+  }
+
+  // Disconnect API
+  if (req.url === '/api/disconnect' && req.method === 'POST') {
+    if (reconnectTimer) clearTimeout(reconnectTimer);
+    if (reconnectCountdownInterval) clearInterval(reconnectCountdownInterval);
+    if (antiAfkInterval) clearInterval(antiAfkInterval);
+    if (bot) {
+      try { bot.quit(); } catch {}
+      bot = null;
+    }
+    botStatus = 'offline';
+    connectedAt = null;
+    addLog('info', 'User requested bot disconnection.');
+    broadcastSSE('status', getBotSnapshot());
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    return res.end(JSON.stringify({ success: true }));
+  }
+
+  // Chat API
   if (req.url === '/api/chat' && req.method === 'POST') {
     let body = '';
     req.on('data', chunk => body += chunk);
@@ -783,6 +892,7 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  // Action API
   if (req.url === '/api/action' && req.method === 'POST') {
     let body = '';
     req.on('data', chunk => body += chunk);
