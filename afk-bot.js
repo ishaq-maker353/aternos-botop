@@ -409,7 +409,7 @@ function scheduleReconnect(customDelaySeconds) {
 function cleanupBotSocket() {
   if (bot) {
     try {
-      (bot as any)?._client?.socket?.destroy?.();
+      bot._client?.socket?.destroy?.();
     } catch {}
     try {
       bot.removeAllListeners();
