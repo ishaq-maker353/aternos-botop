@@ -2,12 +2,11 @@
   "name": "mc-afk-bot",
   "version": "1.0.0",
   "type": "module",
-  "main": "afk-bot.js",
   "scripts": {
     "start": "node afk-bot.js"
   },
   "dependencies": {
-    "mineflayer": "^4.20.1",
-    "minecraft-protocol": "^1.43.0"
+    "mineflayer": "^4.39.0",
+    "minecraft-protocol": "^1.68.0"
   }
 }
